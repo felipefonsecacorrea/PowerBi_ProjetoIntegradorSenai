@@ -28,7 +28,7 @@ header a{
 }
 
 header a:hover{
-    color: #A8D5BA;
+    color: #FFF;
 }
 
 main{
@@ -65,10 +65,15 @@ main{
     border-radius: 5px;
 }
 
+
+.cardintegrante a{
+    color: #FFF;
+    font-size: medium;       
+}
+
 @media screen and (max-width: 1200px) {
   body {
     width: 1200px; /* Mantém largura fixa */
   }
 }
-
 
