@@ -16,5 +16,215 @@
         <iframe title="biIntegrador" width="100%" height="650vh" src="https://app.powerbi.com/view?r=eyJrIjoiZGQ1ZGVkYWMtZDQ5Ny00Y2Q1LWE0YWYtYzExMmEwMGUyNmQwIiwidCI6ImIxMDUxYzRiLTNiOTQtNDFhYi05NDQxLWU3M2E3MjM0MmZkZCJ9" frameborder="0" allowFullScreen="true"></iframe>
     </main>
 
+    <!-- Widget HTML Structure -->
+    <div id="kleitin-chat-widget">
+        <!-- Chat Button -->
+        <button id="kleitin-chat-button" onclick="toggleKleitinChat()">
+            💬
+        </button>
+        
+        <!-- Chat Container -->
+        <div id="kleitin-chat-container">
+            <!-- Header -->
+            <div id="kleitin-chat-header">
+                <h3>🤖 Kleitin - Assistente</h3>
+                <button id="kleitin-close-btn" onclick="closeKleitinChat()">×</button>
+            </div>
+            
+            <!-- Messages -->
+            <div id="kleitin-messages">
+                <div class="kleitin-message bot">
+                    <div class="kleitin-message-content">
+                    <!--    Fala rapeize!! Meu nome é kleitin, se você precisa de algo que não achou no google... eu não sei te ajudar 😄--> ...
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Input Area -->
+            <div id="kleitin-input-area">
+                <input type="text" id="kleitin-message-input" placeholder="Digite sua mensagem..." onkeypress="handleKleitinKeyPress(event)">
+                <button id="kleitin-send-btn" onclick="sendKleitinMessage()">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURAÇÃO - SUBSTITUA PELA SUA URL DO N8N
+        const KLEITIN_WEBHOOK_URL = 'https://SEU-N8N-INSTANCE.app.n8n.cloud/webhook/74b590ad-dcb6-46c4-8cae-0ea85ed6dcc0';
+        
+        // Variáveis globais
+        let kleitinChatOpen = false;
+        let kleitinSessionId = generateKleitinSessionId();
+
+        // Gerar ID de sessão único
+        function generateKleitinSessionId() {
+            return 'kleitin_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Toggle do chat
+        function toggleKleitinChat() {
+            const container = document.getElementById('kleitin-chat-container');
+            const button = document.getElementById('kleitin-chat-button');
+            
+            if (kleitinChatOpen) {
+                closeKleitinChat();
+            } else {
+                container.style.display = 'flex';
+                kleitinChatOpen = true;
+                button.innerHTML = '×';
+                document.getElementById('kleitin-message-input').focus();
+            }
+        }
+
+        // Fechar chat
+        function closeKleitinChat() {
+            const container = document.getElementById('kleitin-chat-container');
+            const button = document.getElementById('kleitin-chat-button');
+            
+            container.style.display = 'none';
+            kleitinChatOpen = false;
+            button.innerHTML = '💬';
+        }
+
+        // Enviar mensagem
+        async function sendKleitinMessage() {
+            const input = document.getElementById('kleitin-message-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Adicionar mensagem do usuário
+            addKleitinMessage(message, 'user');
+            input.value = '';
+            
+            // Desabilitar input e botão
+            toggleKleitinInputs(false);
+            
+            // Mostrar typing indicator
+            showKleitinTyping();
+            
+            try {
+                // Fazer requisição para o n8n
+                const response = await fetch(KLEITIN_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        sessionId: kleitinSessionId,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Remover typing e adicionar resposta
+                hideKleitinTyping();
+                
+                // A resposta pode vir em diferentes formatos dependendo do n8n
+                let botResponse = data.output || data.response || data.message || 'Desculpa, não consegui processar sua mensagem.';
+                
+                addKleitinMessage(botResponse, 'bot');
+                
+            } catch (error) {
+                console.error('Erro ao enviar mensagem:', error);
+                hideKleitinTyping();
+                addKleitinMessage('Ops! Ocorreu um erro. Tente novamente em alguns segundos.', 'bot');
+            }
+            
+            // Reabilitar inputs
+            toggleKleitinInputs(true);
+        }
+
+        // Adicionar mensagem ao chat
+        function addKleitinMessage(message, sender) {
+            const messagesContainer = document.getElementById('kleitin-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `kleitin-message ${sender}`;
+            
+            messageDiv.innerHTML = `
+                <div class="kleitin-message-content">
+                    ${message}
+                </div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Mostrar indicador de digitação
+        function showKleitinTyping() {
+            const messagesContainer = document.getElementById('kleitin-messages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'kleitin-message bot';
+            typingDiv.id = 'kleitin-typing-indicator';
+            
+            typingDiv.innerHTML = `
+                <div class="kleitin-message-content kleitin-typing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Esconder indicador de digitação
+        function hideKleitinTyping() {
+            const typingIndicator = document.getElementById('kleitin-typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // Toggle inputs (habilitar/desabilitar)
+        function toggleKleitinInputs(enabled) {
+            const input = document.getElementById('kleitin-message-input');
+            const button = document.getElementById('kleitin-send-btn');
+            
+            input.disabled = !enabled;
+            button.disabled = !enabled;
+
+            if (enabled) {
+                input.focus();
+            }
+        }
+
+        // Handle Enter key
+        function handleKleitinKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendKleitinMessage();
+            }
+        }
+
+        // Auto-focus no input quando abrir o chat
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('kleitin-message-input');
+            if (input) {
+                input.addEventListener('focus', function() {
+                    setTimeout(() => {
+                        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
+                });
+            }
+        });
+
+        // Fechar chat com ESC
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && kleitinChatOpen) {
+                closeKleitinChat();
+            }
+        });
+
+        console.log('🤖 Kleitin Chat Widget carregado! Sessão:', kleitinSessionId);
+    </script>
+
 </body>
 </html>
