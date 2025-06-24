@@ -77,6 +77,11 @@ a:hover{
     color: crimson;   
 }
 
+h2{
+    width: 85%;
+    text-align: center;
+}
+
 @media screen and (max-width: 1200px) {
   body {
     width: 1200px; /* Mantém largura fixa */
