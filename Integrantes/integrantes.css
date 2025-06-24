@@ -28,8 +28,8 @@ header a{
     transition: 1s;
 }
 
-header a:hover{
-    color: #FFF;
+a:hover{
+    color: crimson;   
 }
 
 main{
@@ -73,7 +73,7 @@ main{
     transition: 1s;       
 }
 
-.cardintegrante a:hover{
+a:hover{
     color: crimson;   
 }
 
